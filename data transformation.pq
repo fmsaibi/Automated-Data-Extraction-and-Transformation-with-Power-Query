@@ -37,7 +37,18 @@ let
             TABLE = #"Extraction: Get latest File"
         in
             Table.SelectColumns(TABLE,{"Data"}),
-    #"Extraction: Filtred Out (_)" = let TABLE = #"Extraction: Removed Other Columns" in Table.TransformColumns(TABLE, {"Data", each let INNER_TABLE = _ in Table.SelectRows(INNER_TABLE, each not Text.StartsWith([Name], "_") ) } ),
+
+    #"Extraction: Filtred Out (_)" = 
+        let 
+            TABLE = #"Extraction: Removed Other Columns"
+        
+        in 
+            Table.TransformColumns(TABLE, {"Data", each 
+                let 
+                    INNER_TABLE = _ 
+                in 
+                    Table.SelectRows(INNER_TABLE, each 
+                        not Text.StartsWith([Name], "_") ) } ),
     
     #"Extraction: Expanded Data" = 
         let 
@@ -127,24 +138,32 @@ let
         in
             Table.FromList(Table.ColumnNames(TABLE{0}[Data])),
 
-    #"**Transformation: Filtered Rows" = Table.SelectRows(#"Transformation: Table Name Header List", each ([Column1] = "Estimated Amount / Final Claimed (OMR)" or [Column1] = "Item" or [Column1] = "PDO  Transmittals " or [Column1] = "Purchase Order (PO)" or [Column1] = "Verified Estimates / Certified Amount (OMR)" or [Column1] = "Verifier")),
-    
+    #"**Transformation: Filtered Rows" = Table.SelectRows(#"Transformation: Table Name Header List", each 
+        (
+            [Column1] = "Estimated Amount / Final Claimed (OMR)" or 
+            [Column1] = "Item" or 
+            [Column1] = "Transmittals " or 
+            [Column1] = "Purchase Order (PO)" or 
+            [Column1] = "Verified Estimates / Certified Amount (OMR)" or 
+            [Column1] = "Verifier"
+            )
+    ),
     
     #"Transformation: Keep Selected Columns" = 
-    
-    let
-        TABLE = #"Transformation: Promote Header"
-    in
-        Table.TransformColumns( TABLE, {"Data", each
-            let 
-                innerTable = _,
-                ColumnNameList = Table.ColumnNames(innerTable)
-            in 
-                Table.SelectColumns(_, #"**Transformation: Filtered Rows"[Column1])
-        }),
+        let
+            TABLE = #"Transformation: Promote Header"
+        in
+            Table.TransformColumns( TABLE, {"Data", each
+                let 
+                    innerTable = _,
+                    ColumnNameList = Table.ColumnNames(innerTable)
+                in 
+                    Table.SelectColumns(_, #"**Transformation: Filtered Rows"[Column1])
+            }),
 
     #"**Transformation: Select Transmittal" = 
-        Table.SelectRows(#"Transformation: Table Name Header List", each ([Column1] = "PDO  Transmittals ")),
+        Table.SelectRows(#"Transformation: Table Name Header List", each 
+            ([Column1] = "Transmittals ")),
 
     #"Transformation: Filter PO No" = 
         let 
@@ -156,7 +175,8 @@ let
                     RENAMED_COLUMN = Table.RenameColumns(INNER_TABLE, {List.First( Table.ColumnNames(INNER_TABLE) ),"PO"}),
                     RENAMED_TRANSMITTAL =  Table.RenameColumns(RENAMED_COLUMN, { List.First(#"**Transformation: Select Transmittal"[Column1]), "Transmittal"}  )
                 in 
-                    Table.SelectRows(RENAMED_TRANSMITTAL, each Text.StartsWith(Text.From([PO]), "4500"))
+                    Table.SelectRows(RENAMED_TRANSMITTAL, each 
+                        Text.StartsWith(Text.From([PO]), "4500"))
             }),
 
     #"**Transformation: Transmittal Title" = #"Transmittal Generator"(5, -4),
